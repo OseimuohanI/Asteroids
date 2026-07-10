@@ -1,5 +1,3 @@
-import sys
-
 import pygame
 
 from asteroid import Asteroid
@@ -14,6 +12,7 @@ def main():
     pygame.init()
     clock = pygame.time.Clock()
     dt = 0.0  # Δ
+    game_over = False
     updatable = pygame.sprite.Group()
     drawable = pygame.sprite.Group()
     asteroids = pygame.sprite.Group()
@@ -23,6 +22,7 @@ def main():
     Asteroid.containers = (asteroids, updatable, drawable)
     Shot.containers = (shots, drawable, updatable)
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    game_over_font = pygame.font.SysFont(None, 72)
     player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
     AsteroidField()
     while True:
@@ -31,21 +31,26 @@ def main():
             if event.type == pygame.QUIT:
                 return
 
-        updatable.update(dt)
-        for asteroid in asteroids:
-            for shot in shots:
-                if asteroid.collides_with(shot):
-                    log_event("asteroid_shot")
-                    asteroid.split()
-                    shot.kill()
-            if player.collides_with(asteroid):
-                log_event("player_hit")
-                print("Game Over!")
-                sys.exit()
+        if not game_over:
+            updatable.update(dt)
+            for asteroid in asteroids:
+                for shot in shots:
+                    if asteroid.collides_with(shot):
+                        log_event("asteroid_shot")
+                        asteroid.split()
+                        shot.kill()
+                if player.collides_with(asteroid):
+                    log_event("player_hit")
+                    game_over = True
         screen.fill("black")
 
         for sprite in drawable:
             sprite.draw(screen)
+
+        if game_over:
+            game_over_surface = game_over_font.render("Game Over", True, "white")
+            game_over_rect = game_over_surface.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
+            screen.blit(game_over_surface, game_over_rect)
 
         pygame.display.flip()
         dt = clock.tick(60) / 1000
