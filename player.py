@@ -1,7 +1,9 @@
 import pygame
+from typing import Callable
 
 from circleshape import CircleShape
 from constants import (
+    PLAYER_COLOR,
     LINE_WIDTH,
     PLAYER_INVULNERABLE_SECONDS,
     PLAYER_RADIUS,
@@ -20,7 +22,7 @@ class Player(CircleShape):
         self.rotation = 0
         self.shoot_timer = 0
         self.invulnerable_timer = PLAYER_INVULNERABLE_SECONDS
-        self.on_shoot = None  # optional callback fired when a shot is created
+        self.on_shoot: Callable[[], None] | None = None  # optional shot callback
 
     @property
     def is_invulnerable(self) -> bool:
@@ -44,7 +46,7 @@ class Player(CircleShape):
         # Flash while invulnerable (skip drawing on alternate 0.1s intervals)
         if self.is_invulnerable and int(self.invulnerable_timer * 10) % 2 == 0:
             return
-        pygame.draw.polygon(screen, "white", self.triangle(), LINE_WIDTH)
+        pygame.draw.polygon(screen, PLAYER_COLOR, self.triangle(), LINE_WIDTH)
 
     def rotate(self, dt: float) -> None:
         self.rotation += PLAYER_TURN_SPEED * dt
