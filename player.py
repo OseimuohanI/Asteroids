@@ -3,6 +3,7 @@ import pygame
 from circleshape import CircleShape
 from constants import (
     LINE_WIDTH,
+    PLAYER_INVULNERABLE_SECONDS,
     PLAYER_RADIUS,
     PLAYER_SHOOT_COOLDOWN_SECONDS,
     PLAYER_SHOOT_SPEED,
@@ -15,8 +16,21 @@ from shot import Shot
 class Player(CircleShape):
     def __init__(self, x: float, y: float) -> None:
         super().__init__(x, y, PLAYER_RADIUS)
+        self.spawn_position = pygame.Vector2(x, y)
         self.rotation = 0
         self.shoot_timer = 0
+        self.invulnerable_timer = PLAYER_INVULNERABLE_SECONDS
+        self.on_shoot = None  # optional callback fired when a shot is created
+
+    @property
+    def is_invulnerable(self) -> bool:
+        return self.invulnerable_timer > 0
+
+    def respawn(self) -> None:
+        self.position = pygame.Vector2(self.spawn_position)
+        self.velocity = pygame.Vector2(0, 0)
+        self.rotation = 0
+        self.invulnerable_timer = PLAYER_INVULNERABLE_SECONDS
 
     def triangle(self) -> list[pygame.Vector2]:
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
@@ -27,6 +41,9 @@ class Player(CircleShape):
         return [a, b, c]
 
     def draw(self, screen: pygame.Surface) -> None:
+        # Flash while invulnerable (skip drawing on alternate 0.1s intervals)
+        if self.is_invulnerable and int(self.invulnerable_timer * 10) % 2 == 0:
+            return
         pygame.draw.polygon(screen, "white", self.triangle(), LINE_WIDTH)
 
     def rotate(self, dt: float) -> None:
@@ -34,6 +51,8 @@ class Player(CircleShape):
 
     def update(self, dt: float) -> None:
         self.shoot_timer -= dt
+        if self.invulnerable_timer > 0:
+            self.invulnerable_timer -= dt
         keys = pygame.key.get_pressed()
 
         if keys[pygame.K_a]:
@@ -59,3 +78,5 @@ class Player(CircleShape):
         self.shoot_timer = PLAYER_SHOOT_COOLDOWN_SECONDS
         shot = Shot(self.position.x, self.position.y)
         shot.velocity = pygame.Vector2(0, 1).rotate(self.rotation) * PLAYER_SHOOT_SPEED
+        if self.on_shoot is not None:
+            self.on_shoot()
