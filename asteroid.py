@@ -15,7 +15,7 @@ class Asteroid(CircleShape):
         pygame.draw.circle(screen, ASTEROID_COLOR, self.position, self.radius, LINE_WIDTH)
 
     def update(self, dt: float) -> None:
-        self.position += self.velocity * dt
+        self.move(dt)
 
     def split(self):
         self.kill()
