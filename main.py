@@ -1,12 +1,39 @@
 import pygame
+import random
 
 from asteroid import Asteroid
 from asteroidfield import AsteroidField
-from constants import PLAYER_LIVES, SCREEN_HEIGHT, SCREEN_WIDTH
+from constants import (
+    ACCENT_COLOR,
+    BACKGROUND_COLOR,
+    HUD_PANEL_COLOR,
+    MUTED_TEXT_COLOR,
+    OVERLAY_PANEL_COLOR,
+    PANEL_BORDER_COLOR,
+    PLAYER_LIVES,
+    RECORD_COLOR,
+    SCREEN_HEIGHT,
+    SCREEN_WIDTH,
+    SECONDARY_ACCENT_COLOR,
+    TEXT_COLOR,
+)
 from logger import log_event, log_state
 from player import Player
 from shot import Shot
 from stats import GameStats
+
+
+def draw_panel(screen, rect: pygame.Rect, fill_color, border_color) -> None:
+    panel = pygame.Surface(rect.size, pygame.SRCALPHA)
+    panel.fill(fill_color)
+    pygame.draw.rect(panel, border_color, panel.get_rect(), 1, border_radius=14)
+    screen.blit(panel, rect)
+
+
+def draw_background(screen, stars) -> None:
+    screen.fill(BACKGROUND_COLOR)
+    for x, y, radius, color in stars:
+        pygame.draw.circle(screen, color, (x, y), radius)
 
 
 def initialize_game(stats: GameStats):
@@ -30,6 +57,9 @@ def initialize_game(stats: GameStats):
 
 
 def draw_hud(screen, font, stats: GameStats, lives: int) -> None:
+    hud_rect = pygame.Rect(16, 16, 250, 168)
+    draw_panel(screen, hud_rect, HUD_PANEL_COLOR, PANEL_BORDER_COLOR)
+
     lines = [
         f"Score: {stats.score}",
         f"Time:  {stats.time_str()}",
@@ -39,8 +69,8 @@ def draw_hud(screen, font, stats: GameStats, lives: int) -> None:
         f"Accuracy:  {stats.accuracy:.0f}%",
     ]
     for i, line in enumerate(lines):
-        surface = font.render(line, True, "white")
-        screen.blit(surface, (10, 10 + i * 22))
+        surface = font.render(line, True, TEXT_COLOR)
+        screen.blit(surface, (28, 28 + i * 22))
 
 
 def draw_centered(screen, font, text, color, y) -> None:
@@ -50,7 +80,10 @@ def draw_centered(screen, font, text, color, y) -> None:
 
 
 def draw_game_over(screen, big_font, small_font, stats: GameStats) -> None:
-    draw_centered(screen, big_font, "Game Over", "white", SCREEN_HEIGHT / 2 - 140)
+    panel_rect = pygame.Rect(SCREEN_WIDTH / 2 - 310, SCREEN_HEIGHT / 2 - 235, 620, 470)
+    draw_panel(screen, panel_rect, OVERLAY_PANEL_COLOR, PANEL_BORDER_COLOR)
+
+    draw_centered(screen, big_font, "Game Over", ACCENT_COLOR, SCREEN_HEIGHT / 2 - 150)
 
     summary = [
         f"Score: {stats.score}",
@@ -59,7 +92,7 @@ def draw_game_over(screen, big_font, small_font, stats: GameStats) -> None:
         f"Accuracy: {stats.accuracy:.0f}%  (level {stats.level})",
     ]
     for i, line in enumerate(summary):
-        draw_centered(screen, small_font, line, "white", SCREEN_HEIGHT / 2 - 70 + i * 30)
+        draw_centered(screen, small_font, line, TEXT_COLOR, SCREEN_HEIGHT / 2 - 70 + i * 30)
 
     records = [
         ("best_score", f"Best score: {int(stats.records['best_score'])}"),
@@ -68,12 +101,12 @@ def draw_game_over(screen, big_font, small_font, stats: GameStats) -> None:
         ("best_accuracy", f"Best accuracy: {stats.records['best_accuracy']:.0f}%"),
     ]
     for i, (key, line) in enumerate(records):
-        color = "gold" if key in stats.beaten else "gray"
+        color = RECORD_COLOR if key in stats.beaten else MUTED_TEXT_COLOR
         label = f"{line}   NEW RECORD!" if key in stats.beaten else line
         draw_centered(screen, small_font, label, color, SCREEN_HEIGHT / 2 + 70 + i * 26)
 
     draw_centered(
-        screen, small_font, "press SPACE to restart", "white", SCREEN_HEIGHT / 2 + 200
+        screen, small_font, "press SPACE to restart", SECONDARY_ACCENT_COLOR, SCREEN_HEIGHT / 2 + 200
     )
 
 
@@ -90,6 +123,16 @@ def main():
     hud_font = pygame.font.SysFont(None, 26)
     game_over_font = pygame.font.SysFont(None, 72)
     small_font = pygame.font.SysFont(None, 36)
+    star_rng = random.Random(7)
+    stars = [
+        (
+            star_rng.randrange(0, SCREEN_WIDTH),
+            star_rng.randrange(0, SCREEN_HEIGHT),
+            star_rng.choice((1, 1, 1, 2)),
+            star_rng.choice(((58, 72, 92), (70, 88, 112), (110, 124, 142))),
+        )
+        for _ in range(84)
+    ]
 
     updatable, drawable, asteroids, shots, player, asteroid_field = initialize_game(stats)
 
@@ -131,7 +174,7 @@ def main():
                         asteroid.split()
                         player.respawn()
 
-        screen.fill("black")
+        draw_background(screen, stars)
 
         for sprite in drawable:
             sprite.draw(screen)
